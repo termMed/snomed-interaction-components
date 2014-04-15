@@ -372,8 +372,10 @@ function jiraPlugin(divElement, conceptId, options) {
                 issueLoadingListItem.html("No issues found for selected concept");
                 issuesListGroup.append(issueLoadingListItem);
             }
-        }).fail(function () {
-            $('#' + panel.attributesPId).html("<div class='alert alert-danger'><span class='i18n' data-i18n-id='i18n_ajax_failed'><strong>Error</strong> while retrieving data from server...</span></div>");
+        }).fail(function (d, textStatus, error) {
+            issueLoadingListItem.html("Find issues for concept faild, status:" + textStatus + ", error: " + error);
+            issuesListGroup.append(issueLoadingListItem);
+            console.error("getJSON failed, status: " + textStatus + ", error: " + error)
         });
     }
 
@@ -594,7 +596,7 @@ function jiraPlugin(divElement, conceptId, options) {
         $("#" + panel.divElement.id + "-modal-body").append(defaultProjectRow);
     }
 
-     this.readOptionsPanel = function () {
+    this.readOptionsPanel = function () {
         var projects = $("#create_issue_projects");
         var opitions_default_projects = $("#opitions_default_projects");
         options.defaultProjectId = opitions_default_projects.val();
