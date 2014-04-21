@@ -219,7 +219,6 @@ function jiraPlugin(divElement, conceptId, options) {
         $("#" + panel.divElement.id + "-apply-button").click(function () {
             //console.log("apply!");
             panel.readOptionsPanel();
-            panel.updateCanvas();
         });
 
         $("#" + panel.divElement.id + "-linkerButton").draggable({
@@ -277,8 +276,36 @@ function jiraPlugin(divElement, conceptId, options) {
                 issueTypeOption.attr("value", issueType.id);
                 issueTypeOption.html(issueType.name);
                 $('#create_issue_issue_types').append(issueTypeOption);
-            });
 
+                //POPULATE DEFAULT ISSUE TYPES IN OPTIONS
+                var opitions_default_issuetype = $("#opitions_default_issuetype");
+                var issueTypeOption = $(document.createElement("option"));
+                issueTypeOption.attr("value", issueType.id);
+                issueTypeOption.html(issueType.name);
+                opitions_default_issuetype.append(issueTypeOption);
+
+            });
+            $('#create_issue_issue_types').val(options.defaultIssueTypeId);
+            $("#opitions_default_issuetype").val(options.defaultIssueTypeId);
+
+
+        }).fail(function () {
+            $('#' + panel.attributesPId).html("<div class='alert alert-danger'><span class='i18n' data-i18n-id='i18n_ajax_failed'><strong>Error</strong> while retrieving data from server...</span></div>");
+        });
+
+        //LOAD PRIORITIES
+        issueTypeXhr = $.getJSON(options.serverUrl + "/jira/priorities", function (result) {
+
+        }).done(function (result) {
+            console.log("priorities loaded")
+            result.forEach(function (priority) {
+                var priorityOption = $(document.createElement("option"));
+                priorityOption.attr("value", priority.id);
+                priorityOption.html(priority.name);
+                $('#create_issue_priority').append(priorityOption);
+
+            });
+            $('#create_issue_priority').val(4);
         }).fail(function () {
             $('#' + panel.attributesPId).html("<div class='alert alert-danger'><span class='i18n' data-i18n-id='i18n_ajax_failed'><strong>Error</strong> while retrieving data from server...</span></div>");
         });
@@ -309,7 +336,7 @@ function jiraPlugin(divElement, conceptId, options) {
 
     }
 
-    this.handleDropEvent = function (event, ui) {
+    this.drop = function (event, ui) {
         var draggable = ui.draggable;
         //console.log(draggable.html() + " |  " + draggable.attr('data-concept-id') + ' was dropped onto me!');
         if (!draggable.attr('data-concept-id')) {
@@ -338,44 +365,115 @@ function jiraPlugin(divElement, conceptId, options) {
 
     }
 
-    function searchConceptIssues(issuesListGroup, currentConceptId) {
-//LOADING LIST ITEM
-        var issueLoadingListItem = $(document.createElement("a"));
-        issuesListGroup.html("");
+    function searchConceptIssues(issuesTableBody, issueTableHeader, currentConceptId) {
+        //LOADING LIST ITEM
+        var issueLoadingListItem = $(document.createElement("tr"));
+        issueLoadingListItem.addClass("tr");
+        issuesTableBody.html("");
+        issueTableHeader.html("");
         var loadingSpan = $(document.createElement("span"));
         loadingSpan.addClass("glyphicon");
         loadingSpan.addClass("glyphicon-refresh");
         loadingSpan.addClass("icon-spin");
 
-        issueLoadingListItem.addClass("list-group-item");
-        issueLoadingListItem.attr("href", "#");
-        issueLoadingListItem.append(loadingSpan);
-        issueLoadingListItem.append(" Loading concept issues.");
+        var issueLoadingCol = $(document.createElement("td"));
+        issueLoadingCol.append(loadingSpan);
+        issueLoadingCol.append(" Loading concept issues...");
 
-        issuesListGroup.append(issueLoadingListItem);
+        issueLoadingListItem.append(issueLoadingCol);
+
+        issuesTableBody.append(issueLoadingListItem);
 
         issueTypeXhr = $.getJSON(options.serverUrl + "/jira/issues/" + options.defaultProjectName + '/' + currentConceptId, function (result) {
-
+            console.log(result);
         }).done(function (result) {
-            issuesListGroup.html("");
+            issuesTableBody.html("");
             if (result.total > 0) {
+
+                //ISSUE TABLE HEADER ROW
+                var issueTableHeaderRow = $(document.createElement("tr"));
+                issueTableHeader.append(issueTableHeaderRow);
+
+                //ISSUE TABLE HEADER COLUMNS
+                var summaryHeadCol = $(document.createElement("th"));
+                var statusHeadCol = $(document.createElement("th"));
+                var autorHeadCol = $(document.createElement("th"));
+                var priorityHeadCol = $(document.createElement("th"));
+                var linkHeadCol = $(document.createElement("th"));
+                summaryHeadCol.html("Tittle");
+                statusHeadCol.html("Status");
+                autorHeadCol.html("Author");
+                priorityHeadCol.html("Priority");
+                linkHeadCol.html("Ext.link");
+
+                issueTableHeaderRow.append(summaryHeadCol);
+                issueTableHeaderRow.append(statusHeadCol);
+                issueTableHeaderRow.append(autorHeadCol);
+                issueTableHeaderRow.append(priorityHeadCol);
+                issueTableHeaderRow.append(linkHeadCol);
+
                 result.issues.forEach(function (issue) {
                     console.log(JSON.stringify(issue));
-                    var issueListItem = $(document.createElement("a"));
-                    issueListItem.addClass("list-group-item");
-                    issueListItem.attr("href", "#");
-                    issueListItem.html(issue.fields.summary);
+                    var issueRow = $(document.createElement("tr"));
 
-                    issuesListGroup.append(issueListItem);
+                    //SUMMARY
+                    var issueSummaryCol = $(document.createElement("td"));
+                    issueSummaryCol.html(issue.fields.summary);
+                    issueRow.append(issueSummaryCol);
+
+                    //STATUS
+                    var issueStatusCol = $(document.createElement("td"));
+                    var statusIcon = $(document.createElement("img"));
+                    statusIcon.attr("src", issue.fields.status.iconUrl);
+                    statusIcon.css("margin-right", "5px");
+                    issueStatusCol.append(statusIcon);
+                    issueStatusCol.append(issue.fields.status.name);
+                    issueRow.append(issueStatusCol);
+
+                    //AUTHOR
+                    var issueAuthorCol = $(document.createElement("td"));
+                    issueAuthorCol.html(issue.fields.creator.name);
+                    issueRow.append(issueAuthorCol);
+
+                    //PRIORITY
+                    var issuePriorityCol = $(document.createElement("td"));
+                    var priorityIcon = $(document.createElement("img"));
+                    priorityIcon.attr("src", issue.fields.priority.iconUrl);
+                    priorityIcon.css("margin-right", "5px");
+                    issuePriorityCol.append(priorityIcon);
+                    issuePriorityCol.append(issue.fields.priority.name);
+                    issueRow.append(issuePriorityCol);
+
+                    //EXT LINK
+                    var issueLinkCol = $(document.createElement("td"));
+                    var issueLinkAnchor = $(document.createElement("a"));
+                    var issueLinkAnchorSpan = $(document.createElement("span"));
+                    issueLinkAnchorSpan.addClass("glyphicon");
+                    issueLinkAnchorSpan.addClass("glyphicon-share");
+                    issueLinkAnchor.attr("href", 'https://jira.ihtsdotools.org/browse/' + issue.key);
+                    issueLinkAnchor.append(issueLinkAnchorSpan);
+                    issueLinkCol.append(issueLinkAnchor);
+                    issueRow.append(issueLinkCol);
+
+                    issuesTableBody.append(issueRow);
                 });
             } else {
-                issueLoadingListItem.html("No issues found for selected concept");
-                issuesListGroup.append(issueLoadingListItem);
+                issueLoadingListItem.html("");
+                var issueSummaryCol = $(document.createElement("td"));
+                issueSummaryCol.append("No issues found for selected concept");
+
+                issueLoadingListItem.append(issueSummaryCol);
+                issuesTableBody.append(issueLoadingListItem);
             }
-        }).fail(function (d, textStatus, error) {
-            issueLoadingListItem.html("Find issues for concept faild, status:" + textStatus + ", error: " + error);
-            issuesListGroup.append(issueLoadingListItem);
-            console.error("getJSON failed, status: " + textStatus + ", error: " + error)
+        }).error(function (d, textStatus, error) {
+            issuesTableBody.html("");
+            issueLoadingListItem.html("");
+            var issueLoadingCol = $(document.createElement("td"));
+            issueLoadingCol.append("Find issues for concept faild, status:" + textStatus + ", error: " + error);
+            issueLoadingListItem.html(issueLoadingCol);
+            issuesTableBody.append(issueLoadingListItem);
+            var error = d.error();
+            console.error(d)
         });
     }
 
@@ -414,29 +512,55 @@ function jiraPlugin(divElement, conceptId, options) {
         conceptCol.addClass("col-xs-12");
         conceptRow.append(conceptCol);
 
-        var conceptPlaceHolder = $(document.createElement("h4"));
+
+        //CONCEPT DROPABLE PLACEHOLDER
+        var conceptPlaceHolder = $(document.createElement("div"));
         conceptPlaceHolder.addClass('jqui-droppable');
         conceptPlaceHolder.addClass('ui-droppable');
         conceptPlaceHolder.css("height", "40px");
         conceptPlaceHolder.css("border", "1px solid red");
+        conceptPlaceHolder.css("padding", "7px");
         conceptPlaceHolder.css("border-radius", "4px");
+        conceptPlaceHolder.css("font-size", "15px");
+        conceptPlaceHolder.css("font-weight", "bold");
+        conceptPlaceHolder.css("color", "#929292");
+
+        conceptPlaceHolder.html("Drop concept to find/create Issues");
 
         conceptCol.append(conceptPlaceHolder);
 
+        //CONCPET ISSUES TABLE TITLE
+        var conceptIssueTableTitle = $(document.createElement("label"));
+        conceptIssueTableTitle.html("Issues");
+        conceptIssueTableTitle.css("visibility", "hidden")
 
-        //CREATE ROW FOR CONCEPT ISSUES
-        var concpetIssuesRow = $(document.createElement("div"));
-        concpetIssuesRow.addClass("row");
 
-        concpetIssuesRow.css("margin-bottom", "10px");
-        var conceptIssueColumn = $(document.createElement("div"));
-        conceptIssueColumn.addClass("col-xs-12");
+        //CONCEPT PANEL
+        var conceptIssuesPanel = $(document.createElement("div"));
+        conceptIssuesPanel.addClass("panel");
+        conceptIssuesPanel.addClass("panel-default");
+        conceptIssuesPanel.css("border", "1px");
+        conceptIssuesPanel.css("visibility", "hidden");
+        conceptIssuesPanel.css("border-style", "solid");
+        conceptIssuesPanel.css("border-color", "#dfdfdf");
 
-        var issuesListGroup = $(document.createElement("div"));
-        issuesListGroup.addClass("list-group");
+        //CONCEPT PANEL BODY
+        var concpetIssuesPanelBody = $(document.createElement("div"));
+        concpetIssuesPanelBody.addClass = ("panel-body");
 
-        conceptIssueColumn.append(issuesListGroup);
-        concpetIssuesRow.append(conceptIssueColumn);
+
+        conceptIssuesPanel.append(concpetIssuesPanelBody);
+        var conceptIssueTable = $(document.createElement("table"));
+        conceptIssueTable.addClass("table");
+
+        //ISSUE TABLE HEADER
+        var issueTableHeader = $(document.createElement("thead"));
+        conceptIssueTable.append(issueTableHeader);
+
+        var issuesTableBody = $(document.createElement("tbody"));
+        conceptIssueTable.append(issuesTableBody);
+
+        concpetIssuesPanelBody.append(conceptIssueTable);
 
 
         //CREATE ISSUE BUTTON
@@ -446,10 +570,12 @@ function jiraPlugin(divElement, conceptId, options) {
         createIssueButton.attr("data-toggle", "modal");
         createIssueButton.attr("data-target", "#createIssueModal");
         createIssueButton.attr("disabled", "disabled");
+        createIssueButton.css("margin-top", "10px");
 
         mainWrapper.append(toolBarRow);
         mainWrapper.append(conceptRow);
-        mainWrapper.append(concpetIssuesRow);
+        mainWrapper.append(conceptIssueTableTitle);
+        mainWrapper.append(conceptIssuesPanel);
         mainWrapper.append(createIssueButton);
         mainWrapper.css("padding-top", "10px");
         mainWrapper.css("padding-bottom", "10px");
@@ -481,8 +607,10 @@ function jiraPlugin(divElement, conceptId, options) {
                     'fields': {
                         project: {id: $('#create_issue_projects').val()},
                         summary: summary,
+                        description: $('#create_issue_description').val(),
                         issuetype: {id: $('#create_issue_issue_types').val()},
-                        customfield_10570: parseFloat($('#create_issue_conceptid').val())
+                        customfield_10602: $('#create_issue_conceptid').val(),
+                        customfield_10601: $('#create_issue_conceptname').val()
                     }
                 }
 
@@ -492,7 +620,7 @@ function jiraPlugin(divElement, conceptId, options) {
                     url: options.serverUrl + '/jira/issues',
                     dataType: 'JSON'
                 }).done(function (response) {
-                    searchConceptIssues(issuesListGroup, currentConceptId);
+                    searchConceptIssues(issuesTableBody, issueTableHeader, currentConceptId);
                     $("#createIssueModal").modal('hide');
                 });
             }
@@ -504,13 +632,17 @@ function jiraPlugin(divElement, conceptId, options) {
                 var draggable = ui.draggable;
                 //console.log(draggable.html() + " |  " + draggable.attr('data-concept-id') + ' was dropped onto me!');
                 if (draggable.attr('data-concept-id')) {
+                    conceptIssuesPanel.css("visibility", "visible");
+                    conceptIssueTableTitle.css("visibility", "visible")
                     console.log("OK : " + draggable.attr('data-concept-id') + ' ' + draggable.attr('data-term'));
                     conceptPlaceHolder.html(draggable.attr('data-concept-id') + ' ' + draggable.attr('data-term'));
                     createIssueButton.removeAttr("disabled");
                     currentConceptId = draggable.attr('data-concept-id');
-                    $('#create_issue_conceptid').attr("disabled", "disabled")
+                    $('#create_issue_conceptid_input').attr("disabled", "disabled")
                     $('#create_issue_conceptid').val(currentConceptId);
-                    searchConceptIssues(issuesListGroup, currentConceptId);
+                    $('#create_issue_conceptname').val(draggable.attr('data-term'));
+                    $('#create_issue_conceptid_input').val(currentConceptId + ' - ' + draggable.attr('data-term'));
+                    searchConceptIssues(issuesTableBody, issueTableHeader, currentConceptId);
                 }
             },
             hoverClass: "bg-info"
@@ -530,23 +662,40 @@ function jiraPlugin(divElement, conceptId, options) {
         '       </div>' +
         '       <div class="modal-body" id="createIssueModalContent">' +
         '<form id="createIssueForm" name="createIssueForm" class="css-form">' +
-        '   <div class="form-group">' +
-        '       <label class="control-label">Project</label>' +
-        '       <select class="form-control" id="create_issue_projects">' +
-        '       </select>' +
-        '   </div>' +
-        '   <div class="form-group">' +
-        '       <label class="control-label">Concpet ID</label>' +
-        '       <input type="number" class="form-control" id="create_issue_conceptid">' +
-        '   </div>' +
         '   <div class="form-group" id="summary_form_group">' +
-        '       <label class="control-label" for="create_issue_summary">Summary</label>' +
+        '       <label class="control-label" for="create_issue_summary">Title</label>' +
         '       <input type="text" class="form-control" required="required" id="create_issue_summary">' +
         '   </div>' +
+        '   <div class="row">' +
+        '       <div class="col-md-6">' +
+        '            <div class="form-group">' +
+        '               <label class="control-label">Project</label>' +
+        '                <select class="form-control" id="create_issue_projects">' +
+        '               </select>' +
+        '            </div>' +
+        '       </div>' +
+        '       <div class="col-md-6">' +
+        '           <div class="form-group">' +
+        '               <label class="control-label">Issue Type</label>' +
+        '               <select class="form-control" id="create_issue_issue_types">' +
+        '               </select>' +
+        '           </div>' +
+        '       </div>' +
+        '   </div>  ' +
         '   <div class="form-group">' +
-        '       <label class="control-label">Project</label>' +
-        '       <select class="form-control" id="create_issue_issue_types">' +
+        '       <label class="control-label">Priority</label>' +
+        '       <select class="form-control" id="create_issue_priority">' +
         '       </select>' +
+        '   </div>' +
+        '   <div class="form-group">' +
+        '       <label class="control-label">Concept</label>' +
+        '       <input type="text" class="form-control" id="create_issue_conceptid_input">' +
+        '       <input type="hidden" class="form-control" id="create_issue_conceptid">' +
+        '       <input type="hidden" class="form-control" id="create_issue_conceptname">' +
+        '   </div>' +
+        '   <div class="form-group" id="description_form_group">' +
+        '       <label class="control-label" for="create_issue_description">Description</label>' +
+        '       <textarea class="form-control" required="required" id="create_issue_description"/>' +
         '   </div>' +
         '</form>' +
         '       </div>' +
@@ -583,25 +732,50 @@ function jiraPlugin(divElement, conceptId, options) {
         projectSelect.addClass("form-control");
         projectSelect.attr("id", "opitions_default_projects");
 
-        projectSelect.on("change", function (element) {
-
-        });
-
         defaultProjectCol.append(defaultProjectLabel);
         defaultProjectCol.append(projectSelect);
 
         defaultProjectRow.append(defaultProjectCol);
 
 
+        //DEFAULT ISSUE TYPE ROW
+        var defaultIssueTypeRow = $(document.createElement("div"));
+        var defaultIssueTypeCol = $(document.createElement("div"));
+        defaultIssueTypeCol.addClass("form-group");
+        var defaultIssueTypeLabel = $(document.createElement("label"));
+        defaultIssueTypeLabel.html("Issue Type");
+
+        var issueTypeSelect = $(document.createElement("select"));
+        issueTypeSelect.addClass("form-control");
+        issueTypeSelect.attr("id", "opitions_default_issuetype");
+
+        defaultIssueTypeCol.append(defaultIssueTypeLabel);
+        defaultIssueTypeCol.append(issueTypeSelect);
+
+        defaultIssueTypeRow.append(defaultIssueTypeCol);
+
         $("#" + panel.divElement.id + "-modal-body").append(defaultProjectRow);
+        $("#" + panel.divElement.id + "-modal-body").append(defaultIssueTypeRow);
     }
 
     this.readOptionsPanel = function () {
         var projects = $("#create_issue_projects");
+        var issueTypes = $("#create_issue_issue_types");
+
+        //GET DEFAULT PROJECT AND SET IT TO OPTIONS AND CREATE PROJECT SELECT
         var opitions_default_projects = $("#opitions_default_projects");
         options.defaultProjectId = opitions_default_projects.val();
         opitions_default_projects.val(options.defaultProjectId);
         projects.val(options.defaultProjectId);
+
+
+        //GET DEFAULT PROJECT AND SET IT TO OPTIONS AND CREATE PROJECT SELECT
+        var opitions_default_issuetype = $("#opitions_default_issuetype");
+        options.defaultIssueTypeId = opitions_default_issuetype.val();
+        opitions_default_issuetype.val(options.defaultIssueTypeId);
+        issueTypes.val(options.defaultIssueTypeId);
+
+
     }
 }
 
