@@ -451,6 +451,7 @@ function jiraPlugin(divElement, conceptId, options) {
                     issueLinkAnchorSpan.addClass("glyphicon");
                     issueLinkAnchorSpan.addClass("glyphicon-share");
                     issueLinkAnchor.attr("href", 'https://jira.ihtsdotools.org/browse/' + issue.key);
+                    issueLinkAnchor.attr("target","_blank")
                     issueLinkAnchor.append(issueLinkAnchorSpan);
                     issueLinkCol.append(issueLinkAnchor);
                     issueRow.append(issueLinkCol);
@@ -664,7 +665,7 @@ function jiraPlugin(divElement, conceptId, options) {
         '<form id="createIssueForm" name="createIssueForm" class="css-form">' +
         '   <div class="form-group" id="summary_form_group">' +
         '       <label class="control-label" for="create_issue_summary">Title</label>' +
-        '       <input type="text" class="form-control" required="required" id="create_issue_summary">' +
+        '       <input type="text" class="form-control" required="required" id="create_issue_summary" placeholder="Issue title">' +
         '   </div>' +
         '   <div class="row">' +
         '       <div class="col-md-6">' +
@@ -695,7 +696,7 @@ function jiraPlugin(divElement, conceptId, options) {
         '   </div>' +
         '   <div class="form-group" id="description_form_group">' +
         '       <label class="control-label" for="create_issue_description">Description</label>' +
-        '       <textarea class="form-control" required="required" id="create_issue_description"/>' +
+        '       <textarea class="form-control" required="required" rows="5" placeholder="Describe in few words, what is your issue about." id="create_issue_description"/>' +
         '   </div>' +
         '</form>' +
         '       </div>' +
