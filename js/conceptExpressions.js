@@ -111,7 +111,7 @@ var renderExpression = function(concept, inferredConcept, div, options) {
     div.html(JST["views/conceptDetailsPlugin/tabs/expression.hbs"](context).trim());
 
     if (panel.clipboard) panel.clipboard.destroy();
-    panel.clipboard = new Clipboard('.clip-btn-exp');
+    panel.clipboard = new ClipboardJS('.clip-btn-exp');
     panel.clipboard.on('success', function(e) {
         // console.info('Action:', e.action);
         // console.info('Text:', e.text);

@@ -9,7 +9,9 @@ $(function() {
     $('.noSelect').disableTextSelect(); //No text selection on elements with a class of 'noSelect'
 });
 
+
 function conceptDetails(divElement, conceptId, options) {
+
 
     if (typeof componentsRegistry == "undefined") {
         componentsRegistry = [];
@@ -460,7 +462,7 @@ function conceptDetails(divElement, conceptId, options) {
             // console.log("paso");
             //$('.clip-btn').unbind();
             if (panel.clipboard) panel.clipboard.destroy();
-            panel.clipboard = new Clipboard('.clip-btn');
+            panel.clipboard = new ClipboardJS('.clip-btn');
             panel.clipboard.on('success', function(e) {
                 // console.info('Action:', e.action);
                 // console.info('Text:', e.text);
